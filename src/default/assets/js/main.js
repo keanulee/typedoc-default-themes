@@ -1,13 +1,3 @@
-var __extends = (this && this.__extends) || (function () {
-    var extendStatics = Object.setPrototypeOf ||
-        ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
-        function (d, b) { for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p]; };
-    return function (d, b) {
-        extendStatics(d, b);
-        function __() { this.constructor = d; }
-        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
-    };
-})();
 var typedoc;
 (function (typedoc) {
     typedoc.$html = $('html');
@@ -16,27 +6,24 @@ var typedoc;
     typedoc.$document = $(document);
     typedoc.$window = $(window);
     typedoc.$body = $('body');
-    function registerService(constructor, name, priority) {
-        if (priority === void 0) { priority = 0; }
+    function registerService(constructor, name, priority = 0) {
         services.push({
             constructor: constructor,
             name: name,
             priority: priority,
             instance: null
         });
-        services.sort(function (a, b) { return a.priority - b.priority; });
+        services.sort((a, b) => a.priority - b.priority);
     }
     typedoc.registerService = registerService;
-    function registerComponent(constructor, selector, priority, namespace) {
-        if (priority === void 0) { priority = 0; }
-        if (namespace === void 0) { namespace = '*'; }
+    function registerComponent(constructor, selector, priority = 0, namespace = '*') {
         components.push({
             selector: selector,
             constructor: constructor,
             priority: priority,
             namespace: namespace
         });
-        components.sort(function (a, b) { return a.priority - b.priority; });
+        components.sort((a, b) => a.priority - b.priority);
     }
     typedoc.registerComponent = registerComponent;
     if (typeof Backbone != 'undefined') {
@@ -46,28 +33,25 @@ var typedoc;
             return res;
         })();
     }
-    var Application = (function (_super) {
-        __extends(Application, _super);
-        function Application() {
-            var _this = _super.call(this) || this;
-            _this.createServices();
-            _this.createComponents(typedoc.$body);
-            return _this;
+    class Application extends typedoc.Events {
+        constructor() {
+            super();
+            this.createServices();
+            this.createComponents(typedoc.$body);
         }
-        Application.prototype.createServices = function () {
-            _(services).forEach(function (c) {
+        createServices() {
+            _(services).forEach((c) => {
                 c.instance = new c.constructor();
                 typedoc[c.name] = c.instance;
             });
-        };
-        Application.prototype.createComponents = function ($context, namespace) {
-            if (namespace === void 0) { namespace = 'default'; }
+        }
+        createComponents($context, namespace = 'default') {
             var result = [];
-            _(components).forEach(function (c) {
+            _(components).forEach((c) => {
                 if (c.namespace != namespace && c.namespace != '*') {
                     return;
                 }
-                $context.find(c.selector).each(function (m, el) {
+                $context.find(c.selector).each((m, el) => {
                     var $el = $(el), instance;
                     if (instance = $el.data('component')) {
                         if (_(result).indexOf(instance) == -1) {
@@ -82,15 +66,14 @@ var typedoc;
                 });
             });
             return result;
-        };
-        return Application;
-    }(typedoc.Events));
+        }
+    }
     typedoc.Application = Application;
 })(typedoc || (typedoc = {}));
 var typedoc;
 (function (typedoc) {
-    var FilterItem = (function () {
-        function FilterItem(key, value) {
+    class FilterItem {
+        constructor(key, value) {
             this.key = key;
             this.value = value;
             this.defaultValue = value;
@@ -99,100 +82,84 @@ var typedoc;
                 this.setValue(this.fromLocalStorage(window.localStorage[this.key]));
             }
         }
-        FilterItem.prototype.initialize = function () { };
-        FilterItem.prototype.handleValueChange = function (oldValue, newValue) { };
-        FilterItem.prototype.fromLocalStorage = function (value) {
+        initialize() { }
+        handleValueChange(oldValue, newValue) { }
+        fromLocalStorage(value) {
             return value;
-        };
-        FilterItem.prototype.toLocalStorage = function (value) {
+        }
+        toLocalStorage(value) {
             return value;
-        };
-        FilterItem.prototype.setValue = function (value) {
+        }
+        setValue(value) {
             if (this.value == value)
                 return;
             var oldValue = this.value;
             this.value = value;
             window.localStorage[this.key] = this.toLocalStorage(value);
             this.handleValueChange(oldValue, value);
-        };
-        return FilterItem;
-    }());
-    var FilterItemCheckbox = (function (_super) {
-        __extends(FilterItemCheckbox, _super);
-        function FilterItemCheckbox() {
-            return _super !== null && _super.apply(this, arguments) || this;
         }
-        FilterItemCheckbox.prototype.initialize = function () {
-            var _this = this;
+    }
+    class FilterItemCheckbox extends FilterItem {
+        initialize() {
             this.$checkbox = $('#tsd-filter-' + this.key);
-            this.$checkbox.on('change', function () {
-                _this.setValue(_this.$checkbox.prop('checked'));
+            this.$checkbox.on('change', () => {
+                this.setValue(this.$checkbox.prop('checked'));
             });
-        };
-        FilterItemCheckbox.prototype.handleValueChange = function (oldValue, newValue) {
+        }
+        handleValueChange(oldValue, newValue) {
             this.$checkbox.prop('checked', this.value);
             typedoc.$html.toggleClass('toggle-' + this.key, this.value != this.defaultValue);
-        };
-        FilterItemCheckbox.prototype.fromLocalStorage = function (value) {
-            return value == 'true';
-        };
-        FilterItemCheckbox.prototype.toLocalStorage = function (value) {
-            return value ? 'true' : 'false';
-        };
-        return FilterItemCheckbox;
-    }(FilterItem));
-    var FilterItemSelect = (function (_super) {
-        __extends(FilterItemSelect, _super);
-        function FilterItemSelect() {
-            return _super !== null && _super.apply(this, arguments) || this;
         }
-        FilterItemSelect.prototype.initialize = function () {
-            var _this = this;
+        fromLocalStorage(value) {
+            return value == 'true';
+        }
+        toLocalStorage(value) {
+            return value ? 'true' : 'false';
+        }
+    }
+    class FilterItemSelect extends FilterItem {
+        initialize() {
             typedoc.$html.addClass('toggle-' + this.key + this.value);
             this.$select = $('#tsd-filter-' + this.key);
-            this.$select.on(typedoc.pointerDown + ' mouseover', function () {
-                _this.$select.addClass('active');
-            }).on('mouseleave', function () {
-                _this.$select.removeClass('active');
-            }).on(typedoc.pointerUp, 'li', function (e) {
-                _this.$select.removeClass('active');
-                _this.setValue($(e.target).attr('data-value'));
+            this.$select.on(typedoc.pointerDown + ' mouseover', () => {
+                this.$select.addClass('active');
+            }).on('mouseleave', () => {
+                this.$select.removeClass('active');
+            }).on(typedoc.pointerUp, 'li', (e) => {
+                this.$select.removeClass('active');
+                this.setValue($(e.target).attr('data-value'));
             });
-            typedoc.$document.on(typedoc.pointerDown, function (e) {
+            typedoc.$document.on(typedoc.pointerDown, (e) => {
                 var $path = $(e.target).parents().addBack();
-                if ($path.is(_this.$select))
+                if ($path.is(this.$select))
                     return;
-                _this.$select.removeClass('active');
+                this.$select.removeClass('active');
             });
-        };
-        FilterItemSelect.prototype.handleValueChange = function (oldValue, newValue) {
+        }
+        handleValueChange(oldValue, newValue) {
             this.$select.find('li.selected').removeClass('selected');
             this.$select.find('.tsd-select-label').text(this.$select.find('li[data-value="' + newValue + '"]').addClass('selected').text());
             typedoc.$html.removeClass('toggle-' + oldValue);
             typedoc.$html.addClass('toggle-' + newValue);
-        };
-        return FilterItemSelect;
-    }(FilterItem));
-    var Filter = (function (_super) {
-        __extends(Filter, _super);
-        function Filter(options) {
-            var _this = _super.call(this, options) || this;
-            _this.optionVisibility = new FilterItemSelect('visibility', 'private');
-            _this.optionInherited = new FilterItemCheckbox('inherited', true);
-            _this.optionExternals = new FilterItemCheckbox('externals', true);
-            _this.optionOnlyExported = new FilterItemCheckbox('only-exported', false);
-            return _this;
         }
-        Filter.isSupported = function () {
+    }
+    class Filter extends Backbone.View {
+        constructor(options) {
+            super(options);
+            this.optionVisibility = new FilterItemSelect('visibility', 'private');
+            this.optionInherited = new FilterItemCheckbox('inherited', true);
+            this.optionExternals = new FilterItemCheckbox('externals', true);
+            this.optionOnlyExported = new FilterItemCheckbox('only-exported', false);
+        }
+        static isSupported() {
             try {
                 return typeof window.localStorage != 'undefined';
             }
             catch (e) {
                 return false;
             }
-        };
-        return Filter;
-    }(Backbone.View));
+        }
+    }
     if (Filter.isSupported()) {
         typedoc.registerComponent(Filter, '#tsd-filter');
     }
@@ -202,18 +169,17 @@ var typedoc;
 })(typedoc || (typedoc = {}));
 var typedoc;
 (function (typedoc) {
-    var MenuHighlight = (function (_super) {
-        __extends(MenuHighlight, _super);
-        function MenuHighlight(options) {
-            var _this = _super.call(this, options) || this;
-            _this.index = 0;
-            _this.listenTo(typedoc.viewport, 'resize', _this.onResize);
-            _this.listenTo(typedoc.viewport, 'scroll', _this.onScroll);
-            _this.createAnchors();
-            return _this;
+    class MenuHighlight extends HTMLElement {
+        constructor() {
+            super(...arguments);
+            this.index = 0;
         }
-        MenuHighlight.prototype.createAnchors = function () {
-            var _this = this;
+        connectedCallback() {
+            window.addEventListener('resize', () => this.onResize());
+            window.addEventListener('scroll', () => this.onScroll(window.pageYOffset));
+            this.createAnchors();
+        }
+        createAnchors() {
             this.index = 0;
             this.anchors = [{
                     position: 0
@@ -222,36 +188,36 @@ var typedoc;
             if (base.indexOf('#') != -1) {
                 base = base.substr(0, base.indexOf('#'));
             }
-            this.$el.find('a').each(function (index, el) {
+            this.querySelectorAll('a').forEach((el) => {
                 var href = el.href;
                 if (href.indexOf('#') == -1)
                     return;
                 if (href.substr(0, base.length) != base)
                     return;
                 var hash = href.substr(href.indexOf('#') + 1);
-                var $anchor = $('a.tsd-anchor[name=' + hash + ']');
-                if ($anchor.length == 0)
+                var $anchor = document.querySelector('a.tsd-anchor[name=' + hash + ']');
+                if (!$anchor)
                     return;
-                _this.anchors.push({
-                    $link: $(el.parentNode),
+                this.anchors.push({
+                    $link: el.parentNode,
                     $anchor: $anchor,
                     position: 0
                 });
             });
             this.onResize();
-        };
-        MenuHighlight.prototype.onResize = function () {
+        }
+        onResize() {
             var anchor;
             for (var index = 1, count = this.anchors.length; index < count; index++) {
                 anchor = this.anchors[index];
-                anchor.position = anchor.$anchor.offset().top;
+                anchor.position = anchor.$anchor.getBoundingClientRect().top + window.pageYOffset;
             }
-            this.anchors.sort(function (a, b) {
+            this.anchors.sort((a, b) => {
                 return a.position - b.position;
             });
-            this.onScroll(typedoc.viewport.scrollTop);
-        };
-        MenuHighlight.prototype.onScroll = function (scrollTop) {
+            this.onScroll(window.pageYOffset);
+        }
+        onScroll(scrollTop) {
             var anchors = this.anchors;
             var index = this.index;
             var count = anchors.length - 1;
@@ -264,16 +230,15 @@ var typedoc;
             }
             if (this.index != index) {
                 if (this.index > 0)
-                    this.anchors[this.index].$link.removeClass('focus');
+                    this.anchors[this.index].$link.classList.remove('focus');
                 this.index = index;
                 if (this.index > 0)
-                    this.anchors[this.index].$link.addClass('focus');
+                    this.anchors[this.index].$link.classList.add('focus');
             }
-        };
-        return MenuHighlight;
-    }(Backbone.View));
+        }
+    }
     typedoc.MenuHighlight = MenuHighlight;
-    typedoc.registerComponent(MenuHighlight, '.menu-highlight');
+    customElements.define('menu-highlight', MenuHighlight);
 })(typedoc || (typedoc = {}));
 var typedoc;
 (function (typedoc) {
@@ -284,44 +249,49 @@ var typedoc;
         StickyMode[StickyMode["Secondary"] = 1] = "Secondary";
         StickyMode[StickyMode["Current"] = 2] = "Current";
     })(StickyMode || (StickyMode = {}));
-    var MenuSticky = (function (_super) {
-        __extends(MenuSticky, _super);
-        function MenuSticky(options) {
-            var _this = _super.call(this, options) || this;
-            _this.state = '';
-            _this.stickyMode = StickyMode.None;
-            _this.$current = _this.$el.find('> ul.current');
-            _this.$navigation = _this.$el.parents('.menu-sticky-wrap');
-            _this.$container = _this.$el.parents('.row');
-            _this.listenTo(typedoc.viewport, 'resize', _this.onResize);
-            if (!hasPositionSticky) {
-                _this.listenTo(typedoc.viewport, 'scroll', _this.onScroll);
-            }
-            _this.onResize(typedoc.viewport.width, typedoc.viewport.height);
-            return _this;
+    class MenuSticky extends HTMLElement {
+        constructor() {
+            super(...arguments);
+            this.state = '';
+            this.stickyMode = StickyMode.None;
         }
-        MenuSticky.prototype.setState = function (state) {
+        connectedCallback() {
+            this.$el = this.querySelector('.menu-sticky');
+            this.$current = this.querySelector('ul.current');
+            this.$navigation = this.querySelector('.menu-sticky-wrap');
+            this.$container = this;
+            window.addEventListener('resize', () => this.onResize(window.innerWidth, window.innerHeight));
+            if (!hasPositionSticky) {
+                window.addEventListener('scroll', () => this.onScroll(window.pageYOffset));
+            }
+            this.onResize(window.innerWidth, window.innerHeight);
+        }
+        setState(state) {
             if (this.state == state)
                 return;
             if (this.state != '')
-                this.$navigation.removeClass(this.state);
+                this.$navigation.classList.remove(this.state);
             this.state = state;
             if (this.state != '')
-                this.$navigation.addClass(this.state);
-        };
-        MenuSticky.prototype.onResize = function (width, height) {
+                this.$navigation.classList.add(this.state);
+        }
+        onResize(width, height) {
             this.stickyMode = StickyMode.None;
             this.setState('');
-            var containerTop = this.$container.offset().top;
-            var containerHeight = this.$container.height();
+            var containerRect = this.$container.getBoundingClientRect();
+            var navigationRect = this.$navigation.getBoundingClientRect();
+            var containerTop = containerRect.top + window.pageYOffset;
+            var containerHeight = containerRect.height;
             var bottom = containerTop + containerHeight;
-            if (this.$navigation.height() < containerHeight) {
-                var elHeight = this.$el.height();
-                var elTop = this.$el.offset().top;
-                if (this.$current.length) {
-                    var currentHeight = this.$current.height();
-                    var currentTop = this.$current.offset().top;
-                    this.$navigation.css('top', containerTop - currentTop + 20);
+            if (navigationRect.height < containerHeight) {
+                var elRect = this.$el.getBoundingClientRect();
+                var elHeight = elRect.height;
+                var elTop = elRect.top + window.pageYOffset;
+                if (this.$current) {
+                    var currentRect = this.$current.getBoundingClientRect();
+                    var currentHeight = currentRect.height;
+                    var currentTop = currentRect.top;
+                    this.$navigation.style.top = `${containerTop - currentTop + 20}px`;
                     if (currentHeight < height) {
                         this.stickyMode = StickyMode.Current;
                         this.stickyTop = currentTop;
@@ -329,15 +299,15 @@ var typedoc;
                     }
                 }
                 if (elHeight < height) {
-                    this.$navigation.css('top', containerTop - elTop + 20);
+                    this.$navigation.style.top = `${containerTop - elTop + 20}px`;
                     this.stickyMode = StickyMode.Secondary;
                     this.stickyTop = elTop;
                     this.stickyBottom = bottom - elHeight - 20;
                 }
             }
             if (!hasPositionSticky) {
-                this.$navigation.css('left', this.$navigation.offset().left);
-                this.onScroll(typedoc.viewport.scrollTop);
+                this.$navigation.style.left = `${navigationRect.left}px`;
+                this.onScroll(window.pageYOffset);
             }
             else {
                 if (this.stickyMode == StickyMode.Current) {
@@ -350,8 +320,8 @@ var typedoc;
                     this.setState('');
                 }
             }
-        };
-        MenuSticky.prototype.onScroll = function (scrollTop) {
+        }
+        onScroll(scrollTop) {
             if (this.stickyMode == StickyMode.Current) {
                 if (scrollTop > this.stickyBottom) {
                     this.setState('sticky-bottom');
@@ -368,11 +338,10 @@ var typedoc;
                     this.setState(scrollTop + 20 > this.stickyTop ? 'sticky' : '');
                 }
             }
-        };
-        return MenuSticky;
-    }(Backbone.View));
+        }
+    }
     typedoc.MenuSticky = MenuSticky;
-    typedoc.registerComponent(MenuSticky, '.menu-sticky');
+    customElements.define('menu-sticky', MenuSticky);
 })(typedoc || (typedoc = {}));
 var typedoc;
 (function (typedoc) {
@@ -418,7 +387,7 @@ var typedoc;
         function loadIndex() {
             if (loadingState != SearchLoadingState.Idle)
                 return;
-            setTimeout(function () {
+            setTimeout(() => {
                 if (loadingState == SearchLoadingState.Idle) {
                     setLoadingState(SearchLoadingState.Loading);
                 }
@@ -428,10 +397,10 @@ var typedoc;
             }
             else {
                 $.get($el.attr('data-index'))
-                    .done(function (source) {
+                    .done((source) => {
                     eval(source);
                     createIndex();
-                }).fail(function () {
+                }).fail(() => {
                     setLoadingState(SearchLoadingState.Failure);
                 });
             }
@@ -499,14 +468,14 @@ var typedoc;
                 $field.blur();
             }
         }
-        $field.on('focusin', function () {
+        $field.on('focusin', () => {
             setHasFocus(true);
             loadIndex();
-        }).on('focusout', function () {
-            setTimeout(function () { return setHasFocus(false); }, 100);
-        }).on('input', function () {
+        }).on('focusout', () => {
+            setTimeout(() => setHasFocus(false), 100);
+        }).on('input', () => {
             setQuery($.trim($field.val()));
-        }).on('keydown', function (e) {
+        }).on('keydown', (e) => {
             if (e.keyCode == 13 || e.keyCode == 27 || e.keyCode == 38 || e.keyCode == 40) {
                 preventPress = true;
                 e.preventDefault();
@@ -526,11 +495,11 @@ var typedoc;
             else {
                 preventPress = false;
             }
-        }).on('keypress', function (e) {
+        }).on('keypress', (e) => {
             if (preventPress)
                 e.preventDefault();
         });
-        $('body').on('keydown', function (e) {
+        $('body').on('keydown', (e) => {
             if (e.altKey || e.ctrlKey || e.metaKey)
                 return;
             if (!hasFocus && e.keyCode > 47 && e.keyCode < 112) {
@@ -541,39 +510,36 @@ var typedoc;
 })(typedoc || (typedoc = {}));
 var typedoc;
 (function (typedoc) {
-    var SignatureGroup = (function () {
-        function SignatureGroup($signature, $description) {
+    class SignatureGroup {
+        constructor($signature, $description) {
             this.$signature = $signature;
             this.$description = $description;
         }
-        SignatureGroup.prototype.addClass = function (className) {
+        addClass(className) {
             this.$signature.addClass(className);
             this.$description.addClass(className);
             return this;
-        };
-        SignatureGroup.prototype.removeClass = function (className) {
+        }
+        removeClass(className) {
             this.$signature.removeClass(className);
             this.$description.removeClass(className);
             return this;
-        };
-        return SignatureGroup;
-    }());
-    var Signature = (function (_super) {
-        __extends(Signature, _super);
-        function Signature(options) {
-            var _this = _super.call(this, options) || this;
-            _this.index = -1;
-            _this.createGroups();
-            if (_this.groups) {
-                _this.$el.addClass('active')
-                    .on('touchstart', '.tsd-signature', function (event) { return _this.onClick(event); })
-                    .on('click', '.tsd-signature', function (event) { return _this.onClick(event); });
-                _this.$container.addClass('active');
-                _this.setIndex(0);
-            }
-            return _this;
         }
-        Signature.prototype.setIndex = function (index) {
+    }
+    class Signature extends Backbone.View {
+        constructor(options) {
+            super(options);
+            this.index = -1;
+            this.createGroups();
+            if (this.groups) {
+                this.$el.addClass('active')
+                    .on('touchstart', '.tsd-signature', (event) => this.onClick(event))
+                    .on('click', '.tsd-signature', (event) => this.onClick(event));
+                this.$container.addClass('active');
+                this.setIndex(0);
+            }
+        }
+        setIndex(index) {
             if (index < 0)
                 index = 0;
             if (index > this.groups.length - 1)
@@ -583,12 +549,12 @@ var typedoc;
             var to = this.groups[index];
             if (this.index > -1) {
                 var from = this.groups[this.index];
-                typedoc.animateHeight(this.$container, function () {
+                typedoc.animateHeight(this.$container, () => {
                     from.removeClass('current').addClass('fade-out');
                     to.addClass('current fade-in');
                     typedoc.viewport.triggerResize();
                 });
-                setTimeout(function () {
+                setTimeout(() => {
                     from.removeClass('fade-out');
                     to.removeClass('fade-in');
                 }, 300);
@@ -598,46 +564,41 @@ var typedoc;
                 typedoc.viewport.triggerResize();
             }
             this.index = index;
-        };
-        Signature.prototype.createGroups = function () {
-            var _this = this;
+        }
+        createGroups() {
             var $signatures = this.$el.find('> .tsd-signature');
             if ($signatures.length < 2)
                 return;
             this.$container = this.$el.siblings('.tsd-descriptions');
             var $descriptions = this.$container.find('> .tsd-description');
             this.groups = [];
-            $signatures.each(function (index, el) {
-                _this.groups.push(new SignatureGroup($(el), $descriptions.eq(index)));
+            $signatures.each((index, el) => {
+                this.groups.push(new SignatureGroup($(el), $descriptions.eq(index)));
             });
-        };
-        Signature.prototype.onClick = function (e) {
-            var _this = this;
+        }
+        onClick(e) {
             e.preventDefault();
-            _(this.groups).forEach(function (group, index) {
+            _(this.groups).forEach((group, index) => {
                 if (group.$signature.is(e.currentTarget)) {
-                    _this.setIndex(index);
+                    this.setIndex(index);
                 }
             });
-        };
-        return Signature;
-    }(Backbone.View));
+        }
+    }
     typedoc.registerComponent(Signature, '.tsd-signatures');
 })(typedoc || (typedoc = {}));
 var typedoc;
 (function (typedoc) {
-    var Toggle = (function (_super) {
-        __extends(Toggle, _super);
-        function Toggle(options) {
-            var _this = _super.call(this, options) || this;
-            _this.className = _this.$el.attr('data-toggle');
-            _this.$el.on(typedoc.pointerUp, function (e) { return _this.onPointerUp(e); });
-            _this.$el.on('click', function (e) { return e.preventDefault(); });
-            typedoc.$document.on(typedoc.pointerDown, function (e) { return _this.onDocumentPointerDown(e); });
-            typedoc.$document.on(typedoc.pointerUp, function (e) { return _this.onDocumentPointerUp(e); });
-            return _this;
+    class Toggle extends Backbone.View {
+        constructor(options) {
+            super(options);
+            this.className = this.$el.attr('data-toggle');
+            this.$el.on(typedoc.pointerUp, (e) => this.onPointerUp(e));
+            this.$el.on('click', (e) => e.preventDefault());
+            typedoc.$document.on(typedoc.pointerDown, (e) => this.onDocumentPointerDown(e));
+            typedoc.$document.on(typedoc.pointerUp, (e) => this.onDocumentPointerUp(e));
         }
-        Toggle.prototype.setActive = function (value) {
+        setActive(value) {
             if (this.active == value)
                 return;
             this.active = value;
@@ -645,15 +606,15 @@ var typedoc;
             this.$el.toggleClass('active', value);
             var transition = (this.active ? 'to-has-' : 'from-has-') + this.className;
             typedoc.$html.addClass(transition);
-            setTimeout(function () { return typedoc.$html.removeClass(transition); }, 500);
-        };
-        Toggle.prototype.onPointerUp = function (event) {
+            setTimeout(() => typedoc.$html.removeClass(transition), 500);
+        }
+        onPointerUp(event) {
             if (typedoc.hasPointerMoved)
                 return;
             this.setActive(true);
             event.preventDefault();
-        };
-        Toggle.prototype.onDocumentPointerDown = function (e) {
+        }
+        onDocumentPointerDown(e) {
             if (this.active) {
                 var $path = $(e.target).parents().addBack();
                 if ($path.hasClass('col-menu')) {
@@ -664,9 +625,8 @@ var typedoc;
                 }
                 this.setActive(false);
             }
-        };
-        Toggle.prototype.onDocumentPointerUp = function (e) {
-            var _this = this;
+        }
+        onDocumentPointerUp(e) {
             if (typedoc.hasPointerMoved)
                 return;
             if (this.active) {
@@ -679,45 +639,41 @@ var typedoc;
                             href = href.substr(0, href.indexOf('#'));
                         }
                         if ($link.prop('href').substr(0, href.length) == href) {
-                            setTimeout(function () { return _this.setActive(false); }, 250);
+                            setTimeout(() => this.setActive(false), 250);
                         }
                     }
                 }
             }
-        };
-        return Toggle;
-    }(Backbone.View));
+        }
+    }
     typedoc.registerComponent(Toggle, 'a[data-toggle]');
 })(typedoc || (typedoc = {}));
 var typedoc;
 (function (typedoc) {
-    var Viewport = (function (_super) {
-        __extends(Viewport, _super);
-        function Viewport() {
-            var _this = _super.call(this) || this;
-            _this.scrollTop = 0;
-            _this.width = 0;
-            _this.height = 0;
-            typedoc.$window.on('scroll', _(function () { return _this.onScroll(); }).throttle(10));
-            typedoc.$window.on('resize', _(function () { return _this.onResize(); }).throttle(10));
-            _this.onResize();
-            _this.onScroll();
-            return _this;
+    class Viewport extends typedoc.Events {
+        constructor() {
+            super();
+            this.scrollTop = 0;
+            this.width = 0;
+            this.height = 0;
+            typedoc.$window.on('scroll', _(() => this.onScroll()).throttle(10));
+            typedoc.$window.on('resize', _(() => this.onResize()).throttle(10));
+            this.onResize();
+            this.onScroll();
         }
-        Viewport.prototype.triggerResize = function () {
+        triggerResize() {
             this.trigger('resize', this.width, this.height);
-        };
-        Viewport.prototype.onResize = function () {
+        }
+        onResize() {
             this.width = typedoc.$window.width();
             this.height = typedoc.$window.height();
             this.trigger('resize', this.width, this.height);
-        };
-        Viewport.prototype.onScroll = function () {
+        }
+        onScroll() {
             this.scrollTop = typedoc.$window.scrollTop();
             this.trigger('scroll', this.scrollTop);
-        };
-        return Viewport;
-    }(typedoc.Events));
+        }
+    }
     typedoc.Viewport = Viewport;
     typedoc.registerService(Viewport, 'viewport');
 })(typedoc || (typedoc = {}));
@@ -739,13 +695,13 @@ var typedoc;
         typedoc.pointerMove = 'touchmove';
         typedoc.pointerUp = 'touchend';
     }
-    typedoc.$document.on(typedoc.pointerDown, function (e) {
+    typedoc.$document.on(typedoc.pointerDown, (e) => {
         typedoc.isPointerDown = true;
         typedoc.hasPointerMoved = false;
         var t = (typedoc.pointerDown == 'touchstart' ? e.originalEvent['targetTouches'][0] : e);
         typedoc.pointerDownPosition.x = t.pageX;
         typedoc.pointerDownPosition.y = t.pageY;
-    }).on(typedoc.pointerMove, function (e) {
+    }).on(typedoc.pointerMove, (e) => {
         if (!typedoc.isPointerDown)
             return;
         if (!typedoc.hasPointerMoved) {
@@ -754,9 +710,9 @@ var typedoc;
             var y = typedoc.pointerDownPosition.y - t.pageY;
             typedoc.hasPointerMoved = (Math.sqrt(x * x + y * y) > 10);
         }
-    }).on(typedoc.pointerUp, function (e) {
+    }).on(typedoc.pointerUp, (e) => {
         typedoc.isPointerDown = false;
-    }).on('click', function (e) {
+    }).on('click', (e) => {
         if (typedoc.preventNextClick) {
             e.preventDefault();
             e.stopImmediatePropagation();

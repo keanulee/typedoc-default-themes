@@ -24,25 +24,27 @@ module typedoc
     }
 
 
-    /**
-     * Controls the sticky behaviour of the secondary menu.
-     */
-    export class MenuSticky extends Backbone.View<any>
+    export class MenuSticky extends HTMLElement
     {
         /**
-         * jQuery instance of the current navigation item.
+         * Element.
          */
-        private $current:JQuery;
+        private $el:HTMLElement;
 
         /**
-         * jQuery instance of the parent representing the entire navigation.
+         * Element of the current navigation item.
          */
-        private $navigation:JQuery;
+        private $current:HTMLElement;
 
         /**
-         * jQuery instance of the parent representing entire sticky container.
+         * Element of the parent representing the entire navigation.
          */
-        private $container:JQuery;
+        private $navigation:HTMLElement;
+
+        /**
+         * Element of the parent representing entire sticky container.
+         */
+        private $container:HTMLElement;
 
         /**
          * The current state of the menu.
@@ -67,22 +69,19 @@ module typedoc
 
         /**
          * Create a new MenuSticky instance.
-         *
-         * @param options  Backbone view constructor options.
          */
-        constructor(options:Backbone.ViewOptions<any>) {
-            super(options);
+        connectedCallback() {
+            this.$el = <HTMLElement>this.querySelector('.menu-sticky');
+            this.$current = <HTMLElement>this.querySelector('ul.current');
+            this.$navigation = <HTMLElement>this.querySelector('.menu-sticky-wrap');
+            this.$container  = this;
 
-            this.$current    = this.$el.find('> ul.current');
-            this.$navigation = this.$el.parents('.menu-sticky-wrap');
-            this.$container  = this.$el.parents('.row');
-
-            this.listenTo(viewport, 'resize', this.onResize);
+            window.addEventListener('resize', () => this.onResize(window.innerWidth, window.innerHeight));
             if (!hasPositionSticky) {
-                this.listenTo(viewport, 'scroll', this.onScroll);
+                window.addEventListener('scroll', () => this.onScroll(window.pageYOffset));
             }
 
-            this.onResize(viewport.width, viewport.height);
+            this.onResize(window.innerWidth, window.innerHeight);
         }
 
 
@@ -94,9 +93,9 @@ module typedoc
         private setState(state:string) {
             if (this.state == state) return;
 
-            if (this.state != '') this.$navigation.removeClass(this.state);
+            if (this.state != '') this.$navigation.classList.remove(this.state);
             this.state = state;
-            if (this.state != '') this.$navigation.addClass(this.state);
+            if (this.state != '') this.$navigation.classList.add(this.state);
         }
 
 
@@ -110,18 +109,22 @@ module typedoc
             this.stickyMode = StickyMode.None;
             this.setState('');
 
-            var containerTop    = this.$container.offset().top;
-            var containerHeight = this.$container.height();
+            var containerRect   = this.$container.getBoundingClientRect();
+            var navigationRect  = this.$navigation.getBoundingClientRect();
+            var containerTop    = containerRect.top + window.pageYOffset;
+            var containerHeight = containerRect.height;
             var bottom          = containerTop + containerHeight;
-            if (this.$navigation.height() < containerHeight) {
-                var elHeight = this.$el.height();
-                var elTop    = this.$el.offset().top;
+            if (navigationRect.height < containerHeight) {
+                var elRect   = this.$el.getBoundingClientRect();
+                var elHeight = elRect.height;
+                var elTop    = elRect.top + window.pageYOffset;
 
-                if (this.$current.length) {
-                    var currentHeight = this.$current.height();
-                    var currentTop    = this.$current.offset().top;
+                if (this.$current) {
+                    var currentRect   = this.$current.getBoundingClientRect();
+                    var currentHeight = currentRect.height;
+                    var currentTop    = currentRect.top;
 
-                    this.$navigation.css('top', containerTop - currentTop + 20);
+                    this.$navigation.style.top = `${containerTop - currentTop + 20}px`;
                     if (currentHeight < height) {
                         this.stickyMode   = StickyMode.Current;
                         this.stickyTop    = currentTop;
@@ -130,7 +133,7 @@ module typedoc
                 }
 
                 if (elHeight < height) {
-                    this.$navigation.css('top', containerTop - elTop + 20);
+                    this.$navigation.style.top = `${containerTop - elTop + 20}px`;
                     this.stickyMode   = StickyMode.Secondary;
                     this.stickyTop    = elTop;
                     this.stickyBottom = bottom - elHeight - 20;
@@ -138,8 +141,8 @@ module typedoc
             }
 
             if (!hasPositionSticky) {
-                this.$navigation.css('left', this.$navigation.offset().left);
-                this.onScroll(viewport.scrollTop);
+                this.$navigation.style.left = `${navigationRect.left}px`;
+                this.onScroll(window.pageYOffset);
             } else {
                 if (this.stickyMode == StickyMode.Current) {
                     this.setState('sticky-current');
@@ -178,5 +181,5 @@ module typedoc
     /**
      * Register this component.
      */
-    registerComponent(MenuSticky, '.menu-sticky');
+    customElements.define('menu-sticky', MenuSticky);
 }

@@ -7,6 +7,7 @@ module.exports = function(grunt)
                 options: {
                     sourceMap: false,
                     module: 'amd',
+                    target: 'es6',
                     basePath: 'themes',
                     declaration: false
                 },
